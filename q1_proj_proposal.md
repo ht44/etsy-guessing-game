@@ -1,6 +1,3 @@
-TRELLO: https://trello.com/b/HNi2tIj7/turek-q1-galvanize-project
-
-PROPOSAL:
 
 For my Q1 project, I will attempt to develop a browser game similar to The Price is Right. Players will take turns guessing at the cost of some item, and whoever ventures the closest guess will be named winner of the round.
 

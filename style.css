@@ -18,3 +18,28 @@ body {
   background-position: center;
   background-size: cover;
 }
+
+.listingDisplay {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  height: 570px;
+  width: 570px;
+  border: 2px outset black;
+  overflow: scroll;
+}
+
+.listingDisplayViewport {
+  display: inline-block;
+  overflow: scroll;
+}
+
+.playerInput {
+  display: block;
+}
+
+#load {
+}
