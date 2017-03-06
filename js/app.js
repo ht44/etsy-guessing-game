@@ -1,34 +1,57 @@
 'use strict';
 
 $(function() {
-  // SHARIABLES
+
+  // SHARIABLES -
   var controls = {
-    limit: 10,
-    shuffleFor: 3,
-    imageUrls: [],
-    listingIDs: [],
-    shuffledIDs: [],
-    tag: 'awesome',
-    tags: [
-      'weird', 'odd', 'curiosities', 'oddities',
-      'unusual', 'bdsm', 'kinky', 'circus', 'dark',
-      'fetish', 'bondage', 'sideshow', 'freak', 'gross',
-      'mature', 'fun', 'cool', 'awesome'
-    ]
+    tag: null,
+    turns: null,
+    listingObjects: [],
+    gameLoad: [],
   };
 
-  // ON CLICK GET EVERYTHING-----
-  $('button').on('click', function() {
+  /////////////////////////////////////////////////////////////////////////////
+
+  // ON SUB LOAD GAME ---------
+  $('input[type=submit]').on('click', function(ev) {
+    ev.preventDefault();
     $('ul').empty();
-    controls.imageUrls = [];
-    controls.listingIDs = [];
-    controls.shuffledIDs = [];
-    letsGetWeird(controls.tag, controls.limit, controls.shuffleFor);
+    controls.tag = $('#tag').val();
+    controls.turns = $('#turns').val();
+    controls.listingObjects = [];
+    controls.gameLoad = [];
+    loadGame(controls.tag, controls.turns);
   });
 
-  // GETS EVERYTHING ------------------------------------
-  function letsGetWeird(tagParam, limitParam, shuffleLength) {
-    var listingRequest = `https://openapi.etsy.com/v2/listings/active.js?tags=${tagParam}&limit=${limitParam}&api_key=${etsyKey}`;
+  /////////////////////////////////////////////////////////////////////////////
+
+  // LISTING CONSTRUCTOR ---------------------
+  function Listing(id, title, price, description) {
+    this.id = id;
+    this.title = title;
+    this.price = price;
+    this.description = description;
+  };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  // SHUFFLER ----------------------------------
+  function shuffleListings(listings, desiredLength) {
+    var shuffler = [];
+    while (shuffler.length < desiredLength) {
+      let randomIndex = Math.floor(Math.random() * listings.length);
+      if (!shuffler.includes(listings[randomIndex])) {
+        shuffler.push(listings[randomIndex]);
+      }
+    }
+    return shuffler;
+  };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  // LOAD GAME --------------------------
+  function loadGame(tagParam, shuffleLength) {
+    var listingRequest = `https://openapi.etsy.com/v2/listings/active.js?tags=${tagParam}&limit=99&api_key=${etsyKey}`;
     // GET WEIRD --------
     var getWeird = $.ajax({
       type: 'GET',
@@ -38,17 +61,23 @@ $(function() {
     // WHEN DONE -------------
     getWeird.done(function(data) {
       var results = data.results;
-      // GATHER IDS ----------------
+      console.log(results);
+      // CONSTRUCT LISTINGS -------
       results.forEach(function(result) {
-        var listingID = result.listing_id;
-        controls.listingIDs.push(listingID);
+        var listingObject = new Listing (
+          result.listing_id,
+          result.title,
+          result.price,
+          result.description
+        );
+        controls.listingObjects.push(listingObject);
       });
-      // SHUFFLE IDS --------------------------
-      controls.shuffledIDs = shuffleListings(controls.listingIDs, shuffleLength);
+      // LOAD OBJECTS --------------------------
+      controls.gameLoad = shuffleListings(controls.listingObjects, shuffleLength);
       // GET WEIRD IMAGES ----------------
-      controls.shuffledIDs.forEach(function(listingID) {
-        setTimeout(function() {
-          var imageRequest = `https://openapi.etsy.com/v2/listings/${listingID}/images.js?api_key=${etsyKey}`;
+      controls.gameLoad.forEach(function(level) {
+        // setTimeout(function() {
+          var imageRequest = `https://openapi.etsy.com/v2/listings/${level.id}/images.js?api_key=${etsyKey}`;
           var getWeirdImages = $.ajax({
             type: 'GET',
             dataType: 'jsonp',
@@ -57,28 +86,16 @@ $(function() {
           // WHEN DONE IMAGES -----------------
           getWeirdImages.done(function(imageData) {
             var imageUrl = imageData.results[0].url_570xN;
-            controls.imageUrls.push(imageUrl);
-            $('ul').append(`<li><img src=${imageUrl}></li>`);
+            level.image = imageUrl;
+            $('ul').append(`<li><img src=${level.image}></li>`);
           });
-        });
-        // ADD RANDO ABOVE IF GOING ABOVE 10
+        // }, Math.floor(Math.random() * 5000));
+        // ^UNCOMMENT TIMEOUT IF SHUFFLED.LENGTH > 10^
       });
-      //images^
-      console.log(controls.imageUrls);
     });
-    //data^
   };
 
-  // SHUFFLES ----------------------------------
-  function shuffleListings(listings, desiredLength) {
-    var shuffledListings = [];
-    while (shuffledListings.length < desiredLength) {
-      let randomIndex = Math.floor(Math.random() * listings.length);
-      if (!shuffledListings.includes(listings[randomIndex])) {
-        shuffledListings.push(listings[randomIndex]);
-      }
-    }
-    return shuffledListings;
-  };
+  /////////////////////////////////////////////////////////////////////////////
+
 });
 //ready^
