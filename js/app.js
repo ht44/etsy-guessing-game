@@ -15,13 +15,28 @@ $(function() {
   // ON SUB LOAD GAME ---------
   $('input[type=submit]').on('click', function(ev) {
     ev.preventDefault();
-    $('ul').empty();
     controls.tag = $('#tag').val();
     controls.turns = $('#turns').val();
     controls.listingObjects = [];
     controls.gameLoad = [];
     loadGame(controls.tag, controls.turns);
     console.log(controls.tag, controls.turns);
+  });
+
+  // --------------------------------------
+
+  // ON LOAD POPULATE CHAMBER --
+  $('#load').on('click', function() {
+    if (controls.gameLoad.length > 0) {
+      var currentListing = controls.gameLoad.shift();
+    } else {
+      console.log('ERROR: mag empty');
+      return;
+    }
+    $('ul').empty();
+    $('ul').append(`<li><img src=${currentListing.image}></li>`);
+    $('ul').append(`<li>${currentListing.title}</li>`);
+    $('ul').append(`<li>${currentListing.description}</li>`);
   });
 
   /////////////////////////////////////////////////////////////////////////////
@@ -45,10 +60,10 @@ $(function() {
       dataType: 'jsonp',
       url: listingRequest
     });
-    // WHEN DONE -------------
+    // WHEN DONE ---------------
     getListings.done(function(data) {
       var results = data.results;
-      // CONSTRUCT OBJECTS -------
+      // CONSTRUCT OBJECTS --------
       results.forEach(function(result) {
         var listingObject = new Listing (
           result.listing_id,
@@ -59,12 +74,16 @@ $(function() {
         controls.listingObjects.push(listingObject);
       });
 
-      // POPULATE GAMELOAD ------------
-      for (let i = 0; i < gameLength; i++) {
+      // POPULATE GAMELOAD ---------------------
+      while (controls.gameLoad.length < gameLength) {
         var range = controls.listingObjects.length;
         var randomIndex = Math.floor(Math.random() * range);
-        console.log(randomIndex);
-        controls.gameLoad.push(controls.listingObjects[randomIndex]);
+        var randomListing = controls.listingObjects[randomIndex];
+        //------------------------------------------
+        if (!controls.gameLoad.includes(randomListing)) {
+          console.log(randomIndex);
+          controls.gameLoad.push(controls.listingObjects[randomIndex]);
+        }
       }
       console.log(controls.gameLoad);
 
@@ -81,14 +100,12 @@ $(function() {
           getListingImage.done(function(imageData) {
             var imageUrl = imageData.results[0].url_570xN;
             listing.image = imageUrl;
-            $('ul').append(`<li><img src=${listing.image}></li>`);
           });
-        // }, Math.floor(Math.random() * 5000));
+        // }, Math.floor(Math.random() * 10000));
       });
     });
   };
-
+  // --------------------------------------------------------------------------
   /////////////////////////////////////////////////////////////////////////////
-
 });
 //ready^
