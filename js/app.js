@@ -2,7 +2,7 @@
 
 $(function() {
 
-  // SHARIABLES -
+  // -
   var controls = {
     tag: null,
     turns: null,
@@ -21,6 +21,7 @@ $(function() {
     controls.listingObjects = [];
     controls.gameLoad = [];
     loadGame(controls.tag, controls.turns);
+    console.log(controls.tag, controls.turns);
   });
 
   /////////////////////////////////////////////////////////////////////////////
@@ -35,34 +36,19 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // SHUFFLER ----------------------------------
-  function shuffleListings(listings, desiredLength) {
-    var shuffler = [];
-    while (shuffler.length < desiredLength) {
-      let randomIndex = Math.floor(Math.random() * listings.length);
-      if (!shuffler.includes(listings[randomIndex])) {
-        shuffler.push(listings[randomIndex]);
-      }
-    }
-    return shuffler;
-  };
-
-  /////////////////////////////////////////////////////////////////////////////
-
   // LOAD GAME --------------------------
-  function loadGame(tagParam, shuffleLength) {
+  function loadGame(tagParam, gameLength) {
     var listingRequest = `https://openapi.etsy.com/v2/listings/active.js?tags=${tagParam}&limit=99&api_key=${etsyKey}`;
-    // GET WEIRD --------
-    var getWeird = $.ajax({
+    // GET LISTINGS -------
+    var getListings = $.ajax({
       type: 'GET',
       dataType: 'jsonp',
       url: listingRequest
     });
     // WHEN DONE -------------
-    getWeird.done(function(data) {
+    getListings.done(function(data) {
       var results = data.results;
-      console.log(results);
-      // CONSTRUCT LISTINGS -------
+      // CONSTRUCT OBJECTS -------
       results.forEach(function(result) {
         var listingObject = new Listing (
           result.listing_id,
@@ -72,25 +58,32 @@ $(function() {
         );
         controls.listingObjects.push(listingObject);
       });
-      // LOAD OBJECTS --------------------------
-      controls.gameLoad = shuffleListings(controls.listingObjects, shuffleLength);
-      // GET WEIRD IMAGES ----------------
-      controls.gameLoad.forEach(function(level) {
+
+      // POPULATE GAMELOAD ------------
+      for (let i = 0; i < gameLength; i++) {
+        var range = controls.listingObjects.length;
+        var randomIndex = Math.floor(Math.random() * range);
+        console.log(randomIndex);
+        controls.gameLoad.push(controls.listingObjects[randomIndex]);
+      }
+      console.log(controls.gameLoad);
+
+      // GET IMAGES ---------------------------
+      controls.gameLoad.forEach(function(listing) {
         // setTimeout(function() {
-          var imageRequest = `https://openapi.etsy.com/v2/listings/${level.id}/images.js?api_key=${etsyKey}`;
-          var getWeirdImages = $.ajax({
+          var imageRequest = `https://openapi.etsy.com/v2/listings/${listing.id}/images.js?api_key=${etsyKey}`;
+          var getListingImage = $.ajax({
             type: 'GET',
             dataType: 'jsonp',
             url: imageRequest
           });
           // WHEN DONE IMAGES -----------------
-          getWeirdImages.done(function(imageData) {
+          getListingImage.done(function(imageData) {
             var imageUrl = imageData.results[0].url_570xN;
-            level.image = imageUrl;
-            $('ul').append(`<li><img src=${level.image}></li>`);
+            listing.image = imageUrl;
+            $('ul').append(`<li><img src=${listing.image}></li>`);
           });
         // }, Math.floor(Math.random() * 5000));
-        // ^UNCOMMENT TIMEOUT IF SHUFFLED.LENGTH > 10^
       });
     });
   };
