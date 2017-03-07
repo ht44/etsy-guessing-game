@@ -4,6 +4,8 @@
 
 $(function() {
 
+  // ROUND.PRICE WILL BE A STRING
+  var round;
   // -------
   var controls = {
     tag: null,
@@ -61,31 +63,36 @@ $(function() {
     // FILL CHAMBER --
     setTimeout(function() {
       fillChamber();
-    }, 1001);
+    }, 2000);
     // GENERATE PLAYER GUESS FORM ----------
     for (var i = 1; i <= controls.players; i++) {
-      $('#playerGuesses').append('<input type=text class=playerInput>');
+      $('#playerGuesses').append(`<input type=number class=playerInput id=player${i}>`);
     };
-    // ADD SUBMIT BUTTON W/ HANDLER-----------------------------
     $('#playerGuesses').append('<input type=submit id=guessSubmit>');
+
+
+    // ------------------------------------
+    // ---------- ADD PLAY LISTEN ----------
     $('#guessSubmit').on('click', function(ev) {
       ev.preventDefault();
+      posit();
       fillChamber();
     });
   };
 
-  //////////////////////////////////////////////////////////////////////////////
-  // ADDDDDDDDDDDDDDDD PRICEEEEEEEEEKLWE:LFKJWERKFJ !!!!!!!!
+  /////////////////////////////////////////////////////////////////////////////
+
   function fillChamber() {
     // ISOLATE -------------------
     if (controls.mag.length > 0) {
-      var currentListing = controls.mag.shift();
-      var currentPrice = currentListing.price;
+      round = controls.mag.shift();
+      var currentPrice = round.price;
+
       // DEBUG
       console.log(`PRICE = ${currentPrice}`);
-      console.log(controls.mag);
-      console.log(controls.gameLoad);
-      console.log(currentListing);
+      // console.log(controls.mag);
+      // console.log(controls.gameLoad);
+      console.log(round);
       // DEBUG
     } else {
       // DEBUG
@@ -95,9 +102,57 @@ $(function() {
     }
     // POPULATE --------------------------
     $('section.listingDisplay > div').empty();
-    $('#listingImage').append(`<img src=${currentListing.image}>`);
-    $('#listingTitle').append(`<h2>${currentListing.title}</h2>`);
-    $('#listingDescrip').append(`<p>${currentListing.description}</p>`);
+    $('#listingImage').append(`<img src=${round.image}>`);
+    $('#listingTitle').append(`<h2>${round.title}</h2>`);
+    $('#listingDescrip').append(`<p>${round.description}</p>`);
+  };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  // CHECK ANSWERS
+  function posit() {
+
+    var guesses = [];
+    var intervals = [];
+    var runtInterval;
+    var closestGuess;
+    var winningPlayer;
+    var currentPrice = parseFloat(round.price);
+    var currentGuess;
+
+    for (let i = 1; i <= controls.players; i++) {
+      currentGuess = parseFloat($(`#player${i}`).val());
+      guesses.push(currentGuess);
+      if (currentGuess > currentPrice) {
+        let difference = currentGuess - currentPrice;
+        intervals.push(difference);
+      } else if (currentGuess < currentPrice) {
+        let difference = currentPrice - currentGuess;
+        intervals.push(difference);
+      } else {
+        intervals.push(0);
+      }
+    }
+    // DEBUG
+    console.log(guesses);
+    console.log(intervals);
+    // DEBUG
+
+    runtInterval = intervals[0];
+    for (let i = 1; i <= controls.players; i++) {
+      if (intervals[i] < runtInterval) {
+        runtInterval = intervals[i];
+      }
+    }
+
+    winningPlayer = intervals.indexOf(runtInterval) + 1;
+    closestGuess = guesses[winningPlayer - 1];
+
+    // DEBUG
+    console.log('off by = ' + runtInterval);
+    console.log('closest guess = ' + closestGuess);
+    console.log('winning player = ' + winningPlayer);
+    // DEBUG
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -132,7 +187,7 @@ $(function() {
         var randomListing = controls.listingObjects[randomIndex];
         //------------------------------------------
         if (!controls.gameLoad.includes(randomListing)) {
-          console.log(randomIndex);
+          // console.log(randomIndex);
           controls.gameLoad.push(controls.listingObjects[randomIndex]);
           controls.mag.push(controls.listingObjects[randomIndex]);
         }
@@ -152,6 +207,7 @@ $(function() {
         });
       });
       // INITIALIZE GAME
+      round = controls.gameLoad[0];
       initGame();
     });
   };
