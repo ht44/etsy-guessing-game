@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// ----------------------------------------------------------------------------
+// --------------------------------------------------------------------------
 'use strict';
 
 $(function() {
@@ -10,6 +10,7 @@ $(function() {
     turns: null,
     players: null,
     listingObjects: [],
+    scoreboard: {},
     gameLoad: [],
     round: null,
     mag: []
@@ -29,22 +30,39 @@ $(function() {
     clearGame();
     grabRules();
     loadGame(controls.tag, controls.turns);
-    // DEBUG
-    console.log(`players = ${controls.players}, turns = ${controls.turns}, tag(s) = ${controls.tag}`);
-    // DEBUG
   });
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  // INITIALIZES -
+  function initGame() {
+    // FILL CHAMBER --
+    setTimeout(function() {
+      fillChamber();
+    }, 1100);
+    addPlayers(controls.players);
+
+    // ------------------------------------
+    // ---------- ADD PLAY LISTEN ----------
+    $('#guessSubmit').on('click', function(ev) {
+      ev.preventDefault();
+      play();
+      fillChamber();
+    });
+  };
 
   /////////////////////////////////////////////////////////////////////////////
 
   // CLEARS GAME --
   function clearGame() {
+    $('#playerGuesses').empty();
     $('section.listingDisplay > div').empty();
     controls.listingObjects = [];
     controls.gameLoad = [];
     controls.mag = [];
   };
 
-  // ----------
+  /////////////////////////////////////////////////////////////////////////////
 
   // GETS RULES ---
   function grabRules() {
@@ -53,33 +71,21 @@ $(function() {
     controls.players = $('#players').val();
   };
 
-  /////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
 
-  // INITIALIZE PLAY
-  function initGame() {
-    // FILL CHAMBER --
-    setTimeout(function() {
-      fillChamber();
-    }, 2000);
-    // GENERATE PLAYER GUESS FORM ----------
-    for (var i = 1; i <= controls.players; i++) {
+  // GEN GUESS FORM + SCOREBOARD ---------
+  function addPlayers(headCount) {
+    for (let i = 1; i <= headCount; i++) {
       $('#playerGuesses').append(`<label for=player${i}>Player ${i}: </label>`);
       $('#playerGuesses').append(`<input type=number class=playerInput id=player${i}>`);
+      controls.scoreboard[`player${i}`] = 0;
     };
     $('#playerGuesses').append('<input type=submit id=guessSubmit>');
-
-
-    // ------------------------------------
-    // ---------- ADD PLAY LISTEN ----------
-    $('#guessSubmit').on('click', function(ev) {
-      ev.preventDefault();
-      posit();
-      fillChamber();
-    });
-  };
+  }
 
   /////////////////////////////////////////////////////////////////////////////
 
+  // LOADS DISPLAY --
   function fillChamber() {
     // ISOLATE -------------------
     if (controls.mag.length > 0) {
@@ -107,8 +113,8 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // CHECK ANSWERS
-  function posit() {
+  // CHECKS ANSWERS
+  function play() {
 
     var guesses = [];
     var intervals = [];
@@ -147,6 +153,8 @@ $(function() {
     console.log('closest guess = ' + closestGuess);
     console.log('winning player = ' + winningPlayer);
     // DEBUG
+
+    controls.scoreboard[`player${winningPlayer}`]++;
   };
 
   /////////////////////////////////////////////////////////////////////////////
