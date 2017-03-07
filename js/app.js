@@ -179,8 +179,9 @@ $(function() {
     controls.scoreboard[`player${winningPlayer}`]++;
     newScore = controls.scoreboard[`player${winningPlayer}`];
     $(`#p${winningPlayer}score`).text(newScore);
+    $('#priceViewport').text('PRICE WAS $' + currentPrice);
   };
-
+  
   /////////////////////////////////////////////////////////////////////////////
 
   // LOADS GAME ----------------------
