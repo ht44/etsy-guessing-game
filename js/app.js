@@ -3,17 +3,19 @@
 'use strict';
 
 $(function() {
-
+  var defaultWin = false;
   // -------
   var controls = {
     tag: null,
     turns: null,
     players: null,
-    listingObjects: [],
     scoreboard: {},
+    donePlaying: false,
+    listingObjects: [],
     gameOver: false,
     gameLoad: [],
     round: null,
+    ties: [],
     mag: []
   };
 
@@ -37,7 +39,6 @@ $(function() {
 
   // INITIALIZES -
   function initGame() {
-    controls.gameOver = false;
     // FILL CHAMBER --
     setTimeout(function() {
       fillChamber();
@@ -48,13 +49,8 @@ $(function() {
     // ---------- ADD PLAY LISTEN ----------
     $('#guessSubmit').on('click', function(ev) {
       ev.preventDefault();
-      if (!controls.gameOver) {
+      if (!controls.donePlaying) {
         play();
-        if (controls.mag.length) {
-          fillChamber();
-        } else {
-          nameVictor();
-        }
       }
     });
   };
@@ -63,6 +59,12 @@ $(function() {
 
   // CLEARS GAME --
   function clearGame() {
+    controls.ties = [];
+    controls.gameOver = false;
+    controls.donePlaying = false;
+    controls.scoreboard = {};
+    $('#nameDisplay').text(null);
+    $('#priceViewport').text(null);
     $('#playerGuesses').empty();
     $('section.listingDisplay > div').empty();
     controls.listingObjects = [];
@@ -97,6 +99,7 @@ $(function() {
 
   // LOADS DISPLAY --
   function fillChamber() {
+    console.log('fillChamber() ran');
   // ISOLATE -------------------
     controls.round = controls.mag.shift();
     var currentPrice = controls.round.price;
@@ -105,38 +108,80 @@ $(function() {
     console.log(`PRICE = ${currentPrice}`);
     // console.log(controls.mag);
     // console.log(controls.gameLoad);
-    console.log(controls.round);
+    // console.log(controls.round);
     // DEBUG
+
     // POPULATE --------------------------
     $('section.listingDisplay > div').empty();
     $('#listingImage').append(`<img src=${controls.round.image}>`);
     $('#listingTitle').append(`<h2>${controls.round.title}</h2>`);
     $('#listingDescrip').append(`<p>${controls.round.description}</p>`);
+
+    if (controls.mag.length === 0) {
+      controls.gameOver = true;
+    }
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
-  //
-
+  // DETERMINE WIN--
   function nameVictor() {
-    var normalScore;
-    var control = 0;
+    console.log('nameVictor() ran');
     var victor;
+    var control = 0;
+    var currentScore;
+    var scores = controls.scoreboard;
+    var currentTest;
+
     for (let i = 1; i <= controls.players; i++) {
-      normalScore = parseFloat($(`#p${i}score`).text());
-      if (normalScore > control) {
+      currentScore = scores[`player${i}`];
+      if (currentScore > control) {
         victor = $(`#label${i}`).text();
-        control = normalScore;
+        control = currentScore;
       }
     }
-    console.log('heeey' + victor);
-    controls.gameOver = true;
+
+    if (checkTie(controls.players, control)) {
+      console.log('heeeeey');
+      controls.gameOver = true;
+      controls.donePlaying = true;
+      return;
+    };
+
     $('#nameDisplay').text(`WINNER = ${victor}`);
+    controls.donePlaying = true;
   };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  function checkTie(headcount, tieControl) {
+    var tieTest;
+    var tieGame = false;
+    var xWayTie;
+
+    for (let j = 1; j <= headcount; j++) {
+      tieTest = controls.scoreboard[`player${j}`];
+      if (tieTest === tieControl) {
+        controls.ties.push($(`#label${j}`).text());
+      }
+    }
+
+    if (controls.ties.length > 1) {
+      tieGame = true;
+      xWayTie = `${controls.ties.length}-WAY TIE BETWEEN: `;
+      controls.ties.forEach(function(tie) {
+        xWayTie += (tie + ', ');
+      });
+      $('#nameDisplay').text(xWayTie);
+    }
+    return tieGame;
+  };
+
+  /////////////////////////////////////////////////////////////////////////////
 
   // CHECKS ANSWERS
   function play() {
-
+    console.log('play() ran');
     var guesses = [];
     var intervals = [];
     var runtInterval;
@@ -171,17 +216,28 @@ $(function() {
     closestGuess = guesses[winningPlayer - 1];
 
     // DEBUG
-    console.log('off by = ' + runtInterval);
-    console.log('closest guess = ' + closestGuess);
-    console.log('winning player = ' + winningPlayer);
+    // console.log('off by = ' + runtInterval);
+    // console.log('closest guess = ' + closestGuess);
+    // console.log('winning player = ' + winningPlayer);
     // DEBUG
 
     controls.scoreboard[`player${winningPlayer}`]++;
+    // for (let key in controls.scoreboard) {
+    //   if (controls.turns / controls.scoreboard[key] < 2) {
+    //     defaultWin = true;
+    //   }
+    // }
     newScore = controls.scoreboard[`player${winningPlayer}`];
     $(`#p${winningPlayer}score`).text(newScore);
     $('#priceViewport').text('PRICE WAS $' + currentPrice);
+
+    if (controls.gameOver) {
+      nameVictor();
+    } else {
+      fillChamber();
+    }
   };
-  
+
   /////////////////////////////////////////////////////////////////////////////
 
   // LOADS GAME ----------------------
