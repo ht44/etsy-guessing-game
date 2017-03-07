@@ -14,25 +14,31 @@
 <body>
 
   <section class="init">
-    <form action="">
+    <form action="" id="initForm">
       <!-- Players -->
       <label for="players">Players: </label>
       <input type="number" min="1" max="11" step="1" id="players" value="3">
       <!-- Turns -->
       <label for="turns">Turns: </label>
-      <input type="number" min="1" max="7" step="1" id="turns" value="3">
+      <input type="number" min="1" max="7" step="1" id="turns" value="1">
       <!-- Tag(s) -->
       <label for="tag">Tag(s): </label>
       <input type="text" id="tag" value="weird">
       <!-- Submit -->
       <label for="submit"></label>
-      <input type="submit" id="loadNew">
+      <input type="submit" id="loadNew" value="Load Game">
       <!-- END -->
     </form>
   </section>
 
+  <div id="nameDisplay"></div>
+
   <section class="play">
     <form action="" id="playerGuesses"></form>
+  </section>
+
+  <section class="score">
+    <div id="board"></div>
   </section>
 
   <section class="listingDisplay">

@@ -11,6 +11,7 @@ $(function() {
     players: null,
     listingObjects: [],
     scoreboard: {},
+    gameOver: false,
     gameLoad: [],
     round: null,
     mag: []
@@ -36,6 +37,7 @@ $(function() {
 
   // INITIALIZES -
   function initGame() {
+    controls.gameOver = false;
     // FILL CHAMBER --
     setTimeout(function() {
       fillChamber();
@@ -46,8 +48,14 @@ $(function() {
     // ---------- ADD PLAY LISTEN ----------
     $('#guessSubmit').on('click', function(ev) {
       ev.preventDefault();
-      play();
-      fillChamber();
+      if (!controls.gameOver) {
+        play();
+        if (controls.mag.length) {
+          fillChamber();
+        } else {
+          nameVictor();
+        }
+      }
     });
   };
 
@@ -73,37 +81,32 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // GEN GUESS FORM + SCOREBOARD ---------
+  // ADDS PLAYERS ---------
   function addPlayers(headCount) {
     for (let i = 1; i <= headCount; i++) {
-      $('#playerGuesses').append(`<label for=player${i}>Player ${i}: </label>`);
+      var playerName = prompt(`Enter a name for Player ${i}:`);
+      $('#playerGuesses').append(`<div class=scorecard id=p${i}score>0</div>`);
+      $('#playerGuesses').append(`<label id=label${i} for=player${i}>${playerName}</label>`);
       $('#playerGuesses').append(`<input type=number class=playerInput id=player${i}>`);
       controls.scoreboard[`player${i}`] = 0;
     };
     $('#playerGuesses').append('<input type=submit id=guessSubmit>');
-  }
+  };
 
   /////////////////////////////////////////////////////////////////////////////
 
   // LOADS DISPLAY --
   function fillChamber() {
-    // ISOLATE -------------------
-    if (controls.mag.length > 0) {
-      controls.round = controls.mag.shift();
-      var currentPrice = controls.round.price;
+  // ISOLATE -------------------
+    controls.round = controls.mag.shift();
+    var currentPrice = controls.round.price;
 
-      // DEBUG
-      console.log(`PRICE = ${currentPrice}`);
-      // console.log(controls.mag);
-      // console.log(controls.gameLoad);
-      console.log(controls.round);
-      // DEBUG
-    } else {
-      // DEBUG
-      console.log('ERROR: mag empty');
-      // DEBUG
-      return;
-    }
+    // DEBUG
+    console.log(`PRICE = ${currentPrice}`);
+    // console.log(controls.mag);
+    // console.log(controls.gameLoad);
+    console.log(controls.round);
+    // DEBUG
     // POPULATE --------------------------
     $('section.listingDisplay > div').empty();
     $('#listingImage').append(`<img src=${controls.round.image}>`);
@@ -112,6 +115,24 @@ $(function() {
   };
 
   /////////////////////////////////////////////////////////////////////////////
+
+  //
+
+  function nameVictor() {
+    var normalScore;
+    var control = 0;
+    var victor;
+    for (let i = 1; i <= controls.players; i++) {
+      normalScore = parseFloat($(`#p${i}score`).text());
+      if (normalScore > control) {
+        victor = $(`#label${i}`).text();
+        control = normalScore;
+      }
+    }
+    console.log('heeey' + victor);
+    controls.gameOver = true;
+    $('#nameDisplay').text(`WINNER = ${victor}`);
+  };
 
   // CHECKS ANSWERS
   function play() {
@@ -123,6 +144,7 @@ $(function() {
     var winningPlayer;
     var currentPrice = parseFloat(controls.round.price);
     var currentGuess;
+    var newScore;
 
     for (let i = 1; i <= controls.players; i++) {
       currentGuess = parseFloat($(`#player${i}`).val());
@@ -155,6 +177,8 @@ $(function() {
     // DEBUG
 
     controls.scoreboard[`player${winningPlayer}`]++;
+    newScore = controls.scoreboard[`player${winningPlayer}`];
+    $(`#p${winningPlayer}score`).text(newScore);
   };
 
   /////////////////////////////////////////////////////////////////////////////
