@@ -4,8 +4,6 @@
 
 $(function() {
 
-  // ROUND.PRICE WILL BE A STRING
-  var round;
   // -------
   var controls = {
     tag: null,
@@ -13,6 +11,7 @@ $(function() {
     players: null,
     listingObjects: [],
     gameLoad: [],
+    round: null,
     mag: []
   };
 
@@ -24,9 +23,7 @@ $(function() {
     this.description = description;
   };
 
-  /////////////////////////////////////////////////////////////////////////////
-
-  // LOAD GAME ON SUB -------------------------
+  // LOAD GAME ON SUB ---------------
   $('#loadNew').on('click', function(ev) {
     ev.preventDefault();
     clearGame();
@@ -66,6 +63,7 @@ $(function() {
     }, 2000);
     // GENERATE PLAYER GUESS FORM ----------
     for (var i = 1; i <= controls.players; i++) {
+      $('#playerGuesses').append(`<label for=player${i}>Player ${i}: </label>`);
       $('#playerGuesses').append(`<input type=number class=playerInput id=player${i}>`);
     };
     $('#playerGuesses').append('<input type=submit id=guessSubmit>');
@@ -85,14 +83,14 @@ $(function() {
   function fillChamber() {
     // ISOLATE -------------------
     if (controls.mag.length > 0) {
-      round = controls.mag.shift();
-      var currentPrice = round.price;
+      controls.round = controls.mag.shift();
+      var currentPrice = controls.round.price;
 
       // DEBUG
       console.log(`PRICE = ${currentPrice}`);
       // console.log(controls.mag);
       // console.log(controls.gameLoad);
-      console.log(round);
+      console.log(controls.round);
       // DEBUG
     } else {
       // DEBUG
@@ -102,9 +100,9 @@ $(function() {
     }
     // POPULATE --------------------------
     $('section.listingDisplay > div').empty();
-    $('#listingImage').append(`<img src=${round.image}>`);
-    $('#listingTitle').append(`<h2>${round.title}</h2>`);
-    $('#listingDescrip').append(`<p>${round.description}</p>`);
+    $('#listingImage').append(`<img src=${controls.round.image}>`);
+    $('#listingTitle').append(`<h2>${controls.round.title}</h2>`);
+    $('#listingDescrip').append(`<p>${controls.round.description}</p>`);
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -117,7 +115,7 @@ $(function() {
     var runtInterval;
     var closestGuess;
     var winningPlayer;
-    var currentPrice = parseFloat(round.price);
+    var currentPrice = parseFloat(controls.round.price);
     var currentGuess;
 
     for (let i = 1; i <= controls.players; i++) {
@@ -133,10 +131,6 @@ $(function() {
         intervals.push(0);
       }
     }
-    // DEBUG
-    console.log(guesses);
-    console.log(intervals);
-    // DEBUG
 
     runtInterval = intervals[0];
     for (let i = 1; i <= controls.players; i++) {
@@ -207,7 +201,6 @@ $(function() {
         });
       });
       // INITIALIZE GAME
-      round = controls.gameLoad[0];
       initGame();
     });
   };
