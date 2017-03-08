@@ -53,6 +53,7 @@ $(function() {
         play();
       }
     });
+    // ---------
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -179,63 +180,84 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // CHECKS ANSWERS
-  function play() {
-    console.log('play() ran');
-    var guesses = [];
-    var intervals = [];
-    var runtInterval;
-    var closestGuess;
-    var winningPlayer;
-    var currentPrice = parseFloat(controls.round.price);
-    var currentGuess;
-    var newScore;
+  // CHECKS FOR DEFAULT VICTOR-----
+  function checkDefault(turns, scores) {
+    for (let key in scores) {
+      if (turns / scores[key] < 2) {
+        controls.gameOver = true;
+      }
+    }
+  };
 
-    for (let i = 1; i <= controls.players; i++) {
-      currentGuess = parseFloat($(`#player${i}`).val());
-      guesses.push(currentGuess);
-      if (currentGuess > currentPrice) {
-        let difference = currentGuess - currentPrice;
+  /////////////////////////////////////////////////////////////////////////////
+
+  // -- GETS HOW FAR OFF YOU WERE
+  function getIntervals(headcount, price) {
+    var guess;
+    var intervals = [];
+    var difference;
+    for (let i = 1; i <= headcount; i++) {
+      // might not need parseFloat here...
+      guess = parseFloat($(`#player${i}`).val());
+      if (guess > price) {
+        difference = guess - price;
         intervals.push(difference);
-      } else if (currentGuess < currentPrice) {
-        let difference = currentPrice - currentGuess;
+      } else if (guess < price) {
+        difference = price - guess;
         intervals.push(difference);
       } else {
         intervals.push(0);
       }
     }
+    return intervals;
+  };
 
-    runtInterval = intervals[0];
-    for (let i = 1; i <= controls.players; i++) {
-      if (intervals[i] < runtInterval) {
-        runtInterval = intervals[i];
+  /////////////////////////////////////////////////////////////////////////////
+  // GETS HOW FAR OFF OF LEAST FAR OFF
+  function getRunt(intervals) {
+    var runt = intervals[0];
+    for (let i = 1; i <= intervals.length; i++) {
+      if (intervals[i] < runt) {
+        runt = intervals[i];
       }
     }
+    return runt;
+  };
 
-    winningPlayer = intervals.indexOf(runtInterval) + 1;
-    closestGuess = guesses[winningPlayer - 1];
+  /////////////////////////////////////////////////////////////////////////////
 
-    // DEBUG
-    // console.log('off by = ' + runtInterval);
-    // console.log('closest guess = ' + closestGuess);
-    // console.log('winning player = ' + winningPlayer);
-    // DEBUG
+  function updateScoreboard(winner) {
+    var newScore;
+    controls.scoreboard[`player${winner}`]++;
+    newScore = controls.scoreboard[`player${winner}`];
+    $(`#p${winner}score`).text(newScore);
+  };
 
-    controls.scoreboard[`player${winningPlayer}`]++;
-    // for (let key in controls.scoreboard) {
-    //   if (controls.turns / controls.scoreboard[key] < 2) {
-    //     defaultWin = true;
-    //   }
-    // }
-    newScore = controls.scoreboard[`player${winningPlayer}`];
-    $(`#p${winningPlayer}score`).text(newScore);
-    $('#priceViewport').text('PRICE WAS $' + currentPrice);
+  /////////////////////////////////////////////////////////////////////////////
+
+  // CHECKS ANSWERS --------------
+  function play() {
+    //make this ting below a param of play()
+    var currentPrice = parseFloat(controls.round.price);
+
+    var currentIntervals = getIntervals(controls.players, currentPrice);
+    var runtInterval = getRunt(currentIntervals);
+    var winningPlayer = currentIntervals.indexOf(runtInterval) + 1;
+
+    updateScoreboard(winningPlayer);
+    checkDefault(controls.turns, controls.scoreboard);
 
     if (controls.gameOver) {
       nameVictor();
     } else {
       fillChamber();
     }
+
+    // DEBUG
+    // console.log('Winner off by = ' + runtInterval);
+    // console.log('winning player = ' + winningPlayer);
+    // DEBUG
+    $('#priceViewport').text('PRICE WAS $' + currentPrice);
   };
 
   /////////////////////////////////////////////////////////////////////////////
