@@ -1,18 +1,22 @@
 ///////////////////////////////////////////////////////////////////////////////
 // --------------------------------------------------------------------------
+
+// RENDER, STATUS
+
 'use strict';
 
 $(function() {
-  var loading = false;
   // -------
   var controls = {
-    mag: [],
+    clip: [],
     tag: null,
     turns: null,
     players: null,
+    loading: false,
     scoreboard: {},
     donePlaying: false,
     listingObjects: [],
+    names: [],
     gameOver: false,
     gameLoad: [],
     round: null,
@@ -22,12 +26,12 @@ $(function() {
   // LOADER ----------------------
   $('#loadNew').on('click', function(ev) {
     ev.preventDefault();
-    if (!loading) {
+    if (!controls.loading) {
       clearGame();
       loadGame(grabRules());
     }
   });
-
+  
   // LISTING CONSTRUCTOR ---------------------
   function Listing (id, title, price, description, url) {
     this.id = id;
@@ -39,29 +43,47 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // INITIALIZES -
+  // INITIALIZES ---------
   function initGame(settings) {
-
+    // console.log('initGame() ran');
     reload();
-    addPlayers(settings.players);
-
-    // ---------- PLAY HANDLER ----------
-    $('#guessSubmit').on('click', function(ev) {
+    meetPlayers(controls.players);
+    // --------- NAME HANDLER ------------
+    $('#nameSubmit').on('click', function(ev) {
       ev.preventDefault();
-      var current = parseFloat(settings.round.price);
-      if (!settings.donePlaying) {
-        play(current);
-      }
 
+      addPlayers(controls.players, grabNames());
+      // ---------- PLAY HANDLER ----------
+      $('#guessSubmit').on('click', function(ev) {
+        ev.preventDefault();
+        // MAYBE EVENT TARGET?
+        var current = settings.round;
+        if (!settings.donePlaying) {
+          play(current);
+        }
+      });
+    // ------------ END NAME HANDLER BELOW --
     });
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
+  // --------------------
+  function validate(playForm) {
+    playForm.forEach(function(input) {
+      if (!input.val()) {
+        return false;
+      } else {
+        return true;
+      }
+    })
+  };
+
   // PLAY ----
   function play(round) {
-
-    var price = round;
+    // console.log('play() ran');
+    var price = parseFloat(round.price);
+    console.log(price);
     var currentIntervals = getIntervals(controls.players, price);
     var runtInterval = getRunt(currentIntervals);
     var winningPlayer = currentIntervals.indexOf(runtInterval) + 1;
@@ -70,7 +92,7 @@ $(function() {
     checkDefault(controls.turns, controls.scoreboard);
 
     if (controls.gameOver) {
-      judge();
+      judge(controls.scoreboard);
     } else {
       reload();
     }
@@ -82,53 +104,48 @@ $(function() {
 
   // DISPLAY --
   function reload() {
-    console.log('reload() ran');
+    // console.log('reload() ran');
+    controls.round = controls.clip.shift();
+    console.log(controls.round.image);
 
-    controls.round = controls.mag.shift();
-    var currentPrice = controls.round.price;
+    populate(
+      controls.round.image,
+      controls.round.title,
+      controls.round.description
+    );
 
-    console.log(controls.round.url);
-    console.log(`PRICE = ${currentPrice}`);
-
-
-    // POPULATE --------------------------
-    $('section.listingDisplay > div').empty();
-    $('#listingImage').append(`<img src=${controls.round.image}>`);
-    $('#listingTitle').append(`<h2>${controls.round.title}</h2>`);
-    $('#listingDescrip').append(`<p>${controls.round.description}</p>`);
-
-    if (controls.mag.length === 0) {
+    if (controls.clip.length === 0) {
       controls.gameOver = true;
     }
+    // console.log(controls.round.url);
+    console.log(`PRICE = ${controls.round.price}`);
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // JUDGE --------
-  function judge() {
-    console.log('judge() ran');
-    var victor;
-    var control = 0;
-    var currentScore;
-    var scores = controls.scoreboard;
-    var currentTest;
+  // JUDGE ---
+  function judge(status) {
+    // console.log('judge() ran');
+    var factors = {
+      control: 0,
+      victor: null,
+      scores: status,
+      currentScore: null
+    };
 
     for (let i = 1; i <= controls.players; i++) {
-      currentScore = scores[`player${i}`];
-      if (currentScore > control) {
-        victor = $(`#label${i}`).text();
-        control = currentScore;
+      factors.currentScore = factors.scores[`player${i}`];
+      if (factors.currentScore > factors.control) {
+        factors.victor = $(`#label${i}`).text();
+        factors.control = factors.currentScore;
       }
     }
-
-    if (checkTie(controls.players, control)) {
-      console.log('heeeeey');
+    if (checkTie(controls.players, factors.control)) {
       controls.gameOver = true;
       controls.donePlaying = true;
       return;
     };
-    // !!!!!!!!
-    $('#nameDisplay').text(`WINNER = ${victor}`);
+    $('#nameDisplay').text(`WINNER = ${factors.victor}`);
     controls.donePlaying = true;
   };
 
@@ -137,20 +154,12 @@ $(function() {
 
   // LOADS GAME ----------------------
   function loadGame(rules) {
-    loading = true;
-    var ammo = rules.turns;
+    // console.log('loadGame() ran');
+    controls.loading = true;
     var listingRequest = `https://openapi.etsy.com/v2/listings/active.js?tags=${rules.tag}&limit=99&api_key=${etsyKey}`;
 
-    var getListings = $.ajax({
-      type: 'GET',
-      dataType: 'jsonp',
-      url: listingRequest
-    });
-
-    getListings.done(function(data) {
+    makeRequest(listingRequest).done(function(data) {
       var results = data.results;
-      // console.log(results);
-
       // CONSTRUCT OBJECTS --------
       results.forEach(function(result) {
         var listingObject = new Listing (
@@ -163,69 +172,76 @@ $(function() {
         controls.listingObjects.push(listingObject);
       });
 
-      // ESTABLISH RANGE -----------
-      // GET IMAGES ---------------------------
-      //------------------------------------------
-
-      initialize(loadMag(ammo));
-
-      function initialize(ofActive) {
-        var imagePromises = [];
-        ofActive.forEach(function(listing) {
-          var imageRequest = `https://openapi.etsy.com/v2/listings/${listing.id}/images.js?api_key=${etsyKey}`;
-          // WHEN DONE EACH IMAGE --------------
-            callImage(imageRequest, imagePromises).done(function(imageData) {
-            var imageUrl = imageData.results[0].url_570xN;
-            listing.image = imageUrl;
-          });
-        });
-
-        Promise.all(imagePromises).then(function() {
-          loading = false;
-          initGame(rules);
-          imagePromises = [];
-        });
-      };
-
+      // INIT ALL --------------------
+      initialize(loadClip(rules.turns), rules);
     });
   };
 
-  // --------------------------------------------------------------------------
   /////////////////////////////////////////////////////////////////////////////
 
-  function callImage(location, destination) {
-    var listingImage = $.ajax({
-      type: 'GET',
-      dataType: 'jsonp',
-      url: location
+  // INITIALIZE ALL ------------------
+  function initialize(fullClip, settings) {
+    // console.log('initialize() ran');
+    var loopDuration = fullClip.length;
+    // PLEDGE TO GET IMAGES -------
+    var pledgeToGet = new Promise(function(resolve, reject) {
+      var index = 0;
+      getImages();
+      function getImages() {
+        // console.log('getImages() ran');
+        setTimeout(function() {
+          var imageRequest = `https://openapi.etsy.com/v2/listings/${fullClip[index].id}/images.js?api_key=${etsyKey}`;
+          makeRequest(imageRequest).done(function(imageData) {
+            var imageUrl = imageData.results[0].url_570xN;
+            controls.clip[index].image = imageUrl;
+            index++;
+            if (index < loopDuration) {
+              getImages();
+            } else {
+              resolve('SUCCESS');
+            }
+          });
+        }, 150);
+      };
     });
 
-    destination.push(listingImage);
-    return listingImage;
+    // CHECK PROMISE ------
+    pledgeToGet.then(function() {
+      controls.loading = false;
+      initGame(settings);
+    });
   };
 
-  //
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
 
-  function loadMag(clip) {
+  function makeRequest(request) {
+    return $.ajax({
+      type: 'GET',
+      dataType: 'jsonp',
+      url: request
+    })
+  };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  function loadClip(clipSize) {
     var range = controls.listingObjects.length;
-    // POPULATE GAMELOAD ---------------------
-    while (controls.gameLoad.length < clip) {
+    while (controls.gameLoad.length < clipSize) {
       var randomIndex = Math.floor(Math.random() * range);
       var randomListing = controls.listingObjects[randomIndex];
       //------------------------------------------
       if (!controls.gameLoad.includes(randomListing)) {
         controls.gameLoad.push(controls.listingObjects[randomIndex]);
-        controls.mag.push(controls.listingObjects[randomIndex]);
+        controls.clip.push(controls.listingObjects[randomIndex]);
       }
     }
-    return controls.mag;
+    return controls.clip;
   };
 
-  // --------------------------------------------------------------------------
   /////////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////////////////////////////////
-
 
   // WIN BY DEFAULT ---------------
   function checkDefault(turns, scores) {
@@ -239,11 +255,11 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   // GETS GUESS/PRICE DIFFERENCES -----
-  function getIntervals(headcount, price) {
+  function getIntervals(headCount, price) {
     var guess;
     var intervals = [];
     var difference;
-    for (let i = 1; i <= headcount; i++) {
+    for (let i = 1; i <= headCount; i++) {
       // might not need parseFloat here...
       guess = parseFloat($(`#player${i}`).val());
       if (guess > price) {
@@ -274,12 +290,13 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  function checkTie(headcount, tieControl) {
+  // ACCOUNT FOR TIE GAME -------------
+  function checkTie(headCount, tieControl) {
     var tieTest;
     var tieGame = false;
     var xWayTie;
 
-    for (let j = 1; j <= headcount; j++) {
+    for (let j = 1; j <= headCount; j++) {
       tieTest = controls.scoreboard[`player${j}`];
       if (tieTest === tieControl) {
         controls.ties.push($(`#label${j}`).text());
@@ -311,7 +328,7 @@ $(function() {
     $('section.listingDisplay > div').empty();
     controls.listingObjects = [];
     controls.gameLoad = [];
-    controls.mag = [];
+    controls.clip = [];
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -322,6 +339,32 @@ $(function() {
     controls.turns = $('#turns').val();
     controls.players = $('#players').val();
     return controls;
+  };
+
+  // GETS NAMES --?
+  function grabNames() {
+    console.log('grabNames() ran');
+    for (let k = 1; k <= controls.players; k++) {
+      let name = $(`#player${k}`).val();
+      controls.names.push(name);
+    }
+
+    console.log(controls.names);
+
+    // controls.tag = $('#tag').val();
+    // controls.turns = $('#turns').val();
+    // controls.players = $('#players').val();
+    $('#playerGuesses').empty();
+    return controls.names;
+  };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  function populate(image, title, description) {
+    $('section.listingDisplay > div').empty();
+    $('#listingImage').append(`<img src=${image}>`);
+    $('#listingTitle').append(`<h2>${title}</h2>`);
+    $('#listingDescrip').append(`<p>${description}</p>`);
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -338,18 +381,32 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // ADDS PLAYERS ---------
-  function addPlayers(headCount) {
+  // MEETS PLAYERS -----------
+  function meetPlayers(headCount) {
     for (let i = 1; i <= headCount; i++) {
-      var playerName = prompt(`Enter a name for Player ${i}:`);
+      // $('#playerGuesses').append(`<label id=label${i} for=player${i}></label>`);
+      $('#playerGuesses').append(`<input type=text class=playerInput id=player${i} placeholder=\"Player ${i}\">`);
+    };
+    $('#playerGuesses').append('<input type=submit id=nameSubmit>');
+  };
+
+  // ADDS PLAYERS ---------
+  function addPlayers(headCount, playerNames) {
+    console.log(playerNames);
+    for (let i = 1; i <= headCount; i++) {
+      let j = (i - 1);
+      let playerName = playerNames[j];
+      console.log(playerName);
       $('#playerGuesses').append(`<div class=scorecard id=p${i}score>0</div>`);
       $('#playerGuesses').append(`<label id=label${i} for=player${i}>${playerName}</label>`);
-      $('#playerGuesses').append(`<input type=number class=playerInput id=player${i}>`);
+      $('#playerGuesses').append(`<input type=number min=0.01 class=playerInput id=player${i}>`);
       controls.scoreboard[`player${i}`] = 0;
     };
     $('#playerGuesses').append('<input type=submit id=guessSubmit>');
   };
+
+  //
+
   /////////////////////////////////////////////////////////////////////////////
 });
-// ----------------------------------------------------------------------------
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////

@@ -5,6 +5,7 @@
   padding: 0;
   box-sizing: border-box;
   font-family: 'Roboto', sans-serif;
+  font-size: 15px;
 }
 
 body {
@@ -53,3 +54,11 @@ body {
   width: 20px;
   border: 2px outset black;
 }
+
+/*.listingDisplayViewport {
+  display: none;
+}*/
+
+/*img {
+  height: auto;
+}*/
