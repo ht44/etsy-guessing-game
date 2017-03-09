@@ -6,7 +6,7 @@
 'use strict';
 
 $(function() {
-  // -------
+  // console.log('doc ready');
   var controls = {
     clip: [],
     tag: null,
@@ -31,7 +31,7 @@ $(function() {
       loadGame(grabRules());
     }
   });
-  
+
   // LISTING CONSTRUCTOR ---------------------
   function Listing (id, title, price, description, url) {
     this.id = id;
@@ -376,7 +376,7 @@ $(function() {
     console.log(`ROUND WINNER = ${roundWinner}`);
     controls.scoreboard[`player${winner}`]++;
     newScore = controls.scoreboard[`player${winner}`];
-    $(`#p${winner}score`).text(newScore);
+    $(`#p${winner}score`).text(roundWinner + ' (SCORE = ' + newScore.toString() + ')');
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -397,7 +397,7 @@ $(function() {
       let j = (i - 1);
       let playerName = playerNames[j];
       console.log(playerName);
-      $('#playerGuesses').append(`<div class=scorecard id=p${i}score>0</div>`);
+      $('#playerGuesses').append(`<div class=scorecard id=p${i}score>${playerName} (SCORE = 0)</div>`);
       $('#playerGuesses').append(`<label id=label${i} for=player${i}>${playerName}</label>`);
       $('#playerGuesses').append(`<input type=number min=0.01 class=playerInput id=player${i}>`);
       controls.scoreboard[`player${i}`] = 0;

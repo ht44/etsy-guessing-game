@@ -12,35 +12,9 @@
   <script src="./js/app.js" charset="utf-8"></script>
   <title>Etsy Guessing Game</title>
 </head>
+
 <body>
-
-  <section class="init">
-    <form action="" id="initForm">
-      <!-- Players -->
-      <label for="players">Players: </label>
-      <input type="number" min="2" max="11" step="1" id="players" value="2">
-      <!-- Turns -->
-      <label for="turns">Turns: </label>
-      <input type="number" min="3" id="turns" value="3">
-      <!-- Tag(s) -->
-      <label for="tag">Tag(s): </label>
-      <input type="text" id="tag" value="weird">
-      <!-- Submit -->
-      <label for="submit"></label>
-      <input type="submit" id="loadNew" value="Load Game">
-      <!-- END -->
-    </form>
-  </section>
-
-  <div id="nameDisplay"></div>
-
-  <section class="play">
-    <form action="" id="playerGuesses"></form>
-  </section>
-
-  <section class="score">
-    <div id="board"></div>
-  </section>
+<div class="hey">
 
   <section class="listingDisplay">
     <div class="listingDisplayViewport" id="listingImage"></div>
@@ -48,8 +22,37 @@
     <div class="listingDisplayViewport" id="listingDescrip"></div>
   </section>
 
-  <section class="priceDisplay">
-    <div id="priceViewport"></div>
+  <div id="nameDisplay"></div>
+  <div id="priceViewport"></div>
+  <!-- <section class="play"> -->
+    <form action="" id="playerGuesses"></form>
+  <!-- </section> -->
+
+  <!-- <section class="init"> -->
+    <form action="" id="initForm">
+      <!-- Players -->
+      <label for="players">Players: </label>
+      <input type="number" min="2" max="11" step="1" id="players" value="2">
+      <!-- Turns -->
+      <label for="turns">Turns: </label>
+      <input type="number" min="3" max="99" id="turns" value="3">
+      <!-- Tag(s) -->
+      <label for="tag">Tag(s): </label>
+      <input type="text" id="tag" value="handmade">
+      <!-- Submit -->
+      <label for="submit"></label>
+      <!-- END -->
+      <input type="submit" id="loadNew" value="Load Game">
+    </form>
+  <!-- </section> -->
+
+
+
+  <section class="score">
+    <div id="board"></div>
   </section>
+
+
+</div>
 </body>
 </html>
