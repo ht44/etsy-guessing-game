@@ -1,12 +1,8 @@
-///////////////////////////////////////////////////////////////////////////////
-// --------------------------------------------------------------------------
-
-// RENDER, STATUS
+//
 
 'use strict';
 
 $(function() {
-  // console.log('doc ready');
   var controls = {
     clip: [],
     tag: null,
@@ -25,7 +21,8 @@ $(function() {
     round: null,
     ties: [],
     playerNumber: 1,
-    met: 1
+    met: 1,
+    taken: []
   };
 
   // LOADER ----------------------
@@ -49,26 +46,6 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // INITIALIZES ---------
-  function initGame() {
-    console.log('initGame() ran');
-    reload();
-    meetPlayer(controls.met);
-  };
-
-  /////////////////////////////////////////////////////////////////////////////
-
-  // --------------------
-  // function validate(playForm) {
-  //   playForm.forEach(function(input) {
-  //     if (!input.val()) {
-  //       return false;
-  //     } else {
-  //       return true;
-  //     }
-  //   })
-  // };
-
   // PLAY ----
   function play() {
     console.log('play() ran');
@@ -77,17 +54,16 @@ $(function() {
     var winningPlayer = controls.intervals.indexOf(runtInterval);
     var victor = controls.playerOrder[winningPlayer];
 
-    console.log(`WINNER = ${victor}`);
     updateScore(victor);
     checkDefault(controls.turns, controls.scoreboard);
-    console.log(controls.scoreboard);
+
     if (controls.gameOver) {
       judge(controls.scoreboard);
     } else {
       reload();
     }
 
-    $('#priceViewport').text('PRICE WAS $' + price);
+    $('#priceViewport').text('PRICE WAS $' + price + ' / ' + `POINT -> ${victor.toUpperCase()}`);
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -120,13 +96,7 @@ $(function() {
 
   // JUDGE ----------
   function judge(scoreboard) {
-    console.log('judge() ran');
-    // var factors = {
-    //   control: 0,
-    //   champion: null,
-    //   scores: scoreboard,
-    //   currentScore: null
-    // };
+    console.log(controls.listingObjects.length);
 
     var highScore = 0;
     var champion;
@@ -145,12 +115,10 @@ $(function() {
       return;
     };
 
-    console.log('WINNER = ' + champion);
-    $('#nameDisplay').text(`WINNER = ${champion}`);
+    $('#nameDisplay').text(`WINNER = ${champion.toUpperCase()}`);
     controls.donePlaying = true;
     clearChamber();
   };
-
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
@@ -173,25 +141,22 @@ $(function() {
         );
         controls.listingObjects.push(listingObject);
       });
-
-      // INIT ALL --------------------
       initialize(loadClip(rules.turns));
     });
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // INITIALIZE ALL ------------------
+  // PREPARE ONE GAME ---------
   function initialize(fullClip) {
     console.log('initialize() ran');
     var loopDuration = fullClip.length;
-    // PLEDGE TO GET IMAGES -------
-    var pledgeToGet = new Promise(function(resolve, reject) {
+    // PROMISE TO GET IMAGES -------
+    var getImages = new Promise(function(resolve, reject) {
       var index = 0;
-
-      getImages();
-      function getImages() {
-        // console.log('getImages() ran');
+      getImage();
+      function getImage() {
+        // console.log('getImage() ran');
         setTimeout(function() {
           var imageRequest = `https://openapi.etsy.com/v2/listings/${fullClip[index].id}/images.js?api_key=${etsyKey}`;
           makeRequest(imageRequest).done(function(imageData) {
@@ -199,7 +164,7 @@ $(function() {
             controls.clip[index].image = imageUrl;
             index++;
             if (index < loopDuration) {
-              getImages();
+              getImage();
             } else {
               resolve('SUCCESS');
             }
@@ -208,13 +173,12 @@ $(function() {
       };
     });
 
-
     // CHECK PROMISE ------
-    pledgeToGet.then(function() {
+    getImages.then(function() {
       console.log('initialized');
       controls.loading = false;
       controls.round = fullClip.shift();
-      populate(
+      populate (
         controls.round.image,
         controls.round.title,
         controls.round.description
@@ -223,10 +187,8 @@ $(function() {
   };
 
   /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
 
+  // GETS JSONP ------------
   function makeRequest(request) {
     return $.ajax({
       type: 'GET',
@@ -246,11 +208,12 @@ $(function() {
       var randomListing = controls.listingObjects[randomIndex];
       //------------------------------------------
       if (!controls.gameLoad.includes(randomListing)) {
-        let chosenListing = controls.listingObjects.splice(randomIndex, 1);
-        controls.gameLoad.push(chosenListing[0]);
-        controls.clip.push(chosenListing[0]);
+        let chosenListing = controls.listingObjects[randomIndex];
+        controls.gameLoad.push(chosenListing);
+        controls.clip.push(chosenListing);
       }
     }
+    console.log(controls.used);
     return controls.clip;
   };
 
@@ -267,6 +230,7 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
+  // GETS DEGREE OF DIFFERENCE----
   function getInterval(guess, price) {
     var difference;
     if (guess > price) {
@@ -282,7 +246,7 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // LEAST DEGREE OF DIFFERENCE
+  // LEAST DEGREE OF DIFF -
   function getRunt(intervals) {
     var runt = intervals[0];
     for (let i = 1; i < intervals.length; i++) {
@@ -293,12 +257,16 @@ $(function() {
     return runt;
   };
 
+  /////////////////////////////////////////////////////////////////////////////
+
   function lockIn(finalAnswer) {
     console.log('lockIn() ran');
     --controls.shotClock;
+    controls.taken.push(finalAnswer);
     var price = parseFloat(controls.round.price);
     getInterval(finalAnswer, price);
     if (controls.shotClock === 0) {
+      controls.taken = [];
       play();
     } else {
       $('#playerGuesses').empty();
@@ -308,18 +276,16 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // ACCOUNT FOR TIE GAME -------------
+  // ACCOUNT FOR TIE GAME -----
   function checkTie(scores, best) {
     var tieTest;
     var tieGame = false;
     var xWayTie;
-
     for (let key in scores) {
       if (scores[key] === best) {
         controls.ties.push(key);
       }
     }
-
     if (controls.ties.length > 1) {
       tieGame = true;
       xWayTie = `${controls.ties.length}-WAY TIE BETWEEN: `;
@@ -346,7 +312,10 @@ $(function() {
     controls.listingObjects = [];
     controls.gameLoad = [];
     controls.clip = [];
+    controls.taken = [];
   };
+
+  /////////////////////////////////////////////////////////////////////////////
 
   function roundRefresh() {
     controls.ties = [];
@@ -368,7 +337,7 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // GETS NAMES --?
+  // TAKES NAME --
   function grabName() {
     console.log('grabName() ran');
     var name = $(`#playerGuesses > input[type=text]`).val();
@@ -379,6 +348,7 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
+  // LOADS DISPLAY ------------------------
   function populate(image, title, description) {
     $('section.listingDisplay > div').empty();
     $('#listingImage').append(`<img src=${image}>`);
@@ -396,35 +366,25 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // MEET PLAYERS -----------
+  // ENTER PLAYER --------------
   function meetPlayer(playerNumber) {
     console.log('meetPlayer() ran');
-    // $('#playerGuesses').append(`<label id=label${i} for=player${i}></label>`);
     $('#playerGuesses').append(`<input type=text class=playerInput placeholder=\"Player ${playerNumber} \">`);
     $('#playerGuesses').append('<input type=submit id=nameSubmit>');
-    // --------- NAME HANDLER ------------
     $('#nameSubmit').on('click', function(ev) {
       ev.preventDefault();
-      addPlayer(grabName());
+      if ($(`#playerGuesses > input[type=text]`).val()) {
+        addPlayer(grabName());
+      }
     });
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
   function addPlayer(nickname) {
-    console.log('addPlayer() ran');
-    // $('#playerGuesses').append(`<div class=scorecard id=p${i}score>${nickname} (SCORE = 0)</div>`);
-    // $('#playerGuesses').append(`<label for=${nickname}>${nickname}: </label>`);
-    // $('#playerGuesses').append(`<input type=number min=0.01 class=playerInput id=${nickname}>`);
-
     controls.names.push(nickname);
     controls.scoreboard[nickname] = 0;
-
     $('#scoreboard').append(`<div class=scoreCard id=${nickname}><div>${nickname}</div><div id=${nickname}score>0</div></div>`);
-    // console.log(nickname);
-    // console.log(controls.names);
-    // $('#playerGuesses').append('<input type=submit id=guessSubmit>');
-
     if (controls.met < controls.needToMeet) {
       ++controls.met;
       meetPlayer(controls.met);
@@ -451,11 +411,16 @@ $(function() {
 
     $('#guessSubmit').on('click', function(ev) {
       console.log('guess handler triggered');
+      console.log(controls.taken);
       ev.preventDefault();
       if (!controls.loading) {
         var playerGuess = $(`#playerGuesses > input[type=number]`).val();
         var guessValue = parseFloat(playerGuess);
-        lockIn(guessValue);
+        if (playerGuess && !controls.taken.includes(guessValue)) {
+          lockIn(guessValue);
+        } else {
+          console.log('FORM ERROR: NOT VALID');
+        }
       }
     });
   };
@@ -496,6 +461,7 @@ $(function() {
   function clearChamber() {
     $('#playerGuesses').empty();
   };
-});
 
+  // --------------------------------------------------------------------------
+});
 ////////////////////////////////////////////////////////////////////////////////
