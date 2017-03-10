@@ -28,6 +28,7 @@ $(function() {
   // MASTER LOAD ---------------------
   $('#loadNew').on('click', function(ev) {
     ev.preventDefault();
+    console.log(controls.loading);
     if (!controls.loading) {
       hardReset();
       meetPlayer(controls.met);
@@ -96,8 +97,7 @@ $(function() {
 
   // JUDGE ----------
   function judge(scoreboard) {
-    console.log(controls.listingObjects.length);
-
+    console.log('judge() ran');
     var highScore = 0;
     var champion;
 
@@ -213,7 +213,7 @@ $(function() {
         controls.clip.push(chosenListing);
       }
     }
-    console.log(controls.used);
+    // console.log(controls.used);
     return controls.clip;
   };
 
@@ -300,20 +300,54 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   // CLEARS GAME --
+  // function hardReset() {
+  //   console.log('hardReset() ran');
+  //   controls.shotClock = parseFloat($('#players').val());
+    // $('#scoreboard').empty();
+  //   roundRefresh();
+  //   controls.round = null;
+  //   controls.met = 1;
+  //   controls.needToMeet = parseFloat($('#players').val());
+  //   controls.ties = [];
+  //   controls.gameOver = false;
+  //   controls.donePlaying = false;
+  //   controls.scoreboard = {};
+  //   controls.dugout = [];
+  //   $('#nameDisplay').text(null);
+  //   $('#priceViewport').text(null);
+  //   $('#playerGuesses').empty();
+  //   $('section.listingDisplay > div').empty();
+  //   controls.listingObjects = [];
+  //   controls.gameLoad = [];
+  //   controls.clip = [];
+  //   controls.taken = [];
+  // };
+
   function hardReset() {
-    $('#scoreboard').show();
-    controls.ties = [];
-    controls.gameOver = false;
-    controls.donePlaying = false;
+    controls.clip = [];
+    controls.tag = null;
+    controls.turns = null;
+    controls.players = null;
+    controls.loading = false;
     controls.scoreboard = {};
+    controls.donePlaying = false;
+    controls.listingObjects = [];
+    controls.intervals = [];
+    controls.playerOrder = [];
+    controls.dugout = [];
+    controls.names = [];
+    controls.gameOver = false;
+    controls.gameLoad = [];
+    controls.round = null;
+    controls.ties = [];
+    controls.playerNumber = 1;
+    controls.met = 1;
+    controls.taken = [];
+    $('#scoreboard').empty();
     $('#nameDisplay').text(null);
     $('#priceViewport').text(null);
     $('#playerGuesses').empty();
     $('section.listingDisplay > div').empty();
-    controls.listingObjects = [];
-    controls.gameLoad = [];
-    controls.clip = [];
-    controls.taken = [];
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -389,11 +423,12 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   function addPlayer(nickname) {
+    console.log('addPlayer() ran');
     controls.names.push(nickname);
     controls.scoreboard[nickname] = 0;
     $('#scoreboard').append(`<div class=scoreCard id=${nickname}><div>${nickname}</div><div id=${nickname}score>0</div></div>`);
     if (controls.met < controls.needToMeet) {
-      ++controls.met;
+      controls.met++;
       meetPlayer(controls.met);
     } else {
       giveTurn(shuffle(controls.names));
@@ -436,6 +471,7 @@ $(function() {
 
   function shuffle(ordered) {
     console.log('shuffle() ran');
+    console.log(controls);
     var range = ordered.length;
     while (controls.dugout.length < ordered.length) {
       var randomInteger = Math.floor(Math.random() * range);
