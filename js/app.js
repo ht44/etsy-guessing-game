@@ -28,7 +28,6 @@ $(function() {
   // MASTER LOAD ---------------------
   $('#loadNew').on('click', function(ev) {
     ev.preventDefault();
-    console.log(controls.loading);
     if (!controls.loading) {
       hardReset();
       meetPlayer(controls.met);
@@ -361,6 +360,7 @@ $(function() {
     $('#listingImage').append(`<img src=${image}>`);
     $('#listingTitle').append(`<h2>${title}</h2>`);
     $('#listingDescrip').append(`<p>${description}</p>`);
+    console.log(controls.round.url);
   };
 
   /////////////////////////////////////////////////////////////////////////////
