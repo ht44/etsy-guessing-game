@@ -16,18 +16,24 @@ $(function() {
     scoreboard: {},
     donePlaying: false,
     listingObjects: [],
+    intervals: [],
+    playerOrder: [],
+    dugout: [],
     names: [],
     gameOver: false,
     gameLoad: [],
     round: null,
-    ties: []
+    ties: [],
+    playerNumber: 1,
+    met: 1
   };
 
   // LOADER ----------------------
   $('#loadNew').on('click', function(ev) {
     ev.preventDefault();
     if (!controls.loading) {
-      clearGame();
+      hardReset();
+      meetPlayer(controls.met);
       loadGame(grabRules());
     }
   });
@@ -44,53 +50,37 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   // INITIALIZES ---------
-  function initGame(settings) {
-    // console.log('initGame() ran');
+  function initGame() {
+    console.log('initGame() ran');
     reload();
-    meetPlayers(controls.players);
-    // --------- NAME HANDLER ------------
-    $('#nameSubmit').on('click', function(ev) {
-      ev.preventDefault();
-
-      addPlayers(controls.players, grabNames());
-      // ---------- PLAY HANDLER ----------
-      $('#guessSubmit').on('click', function(ev) {
-        ev.preventDefault();
-        // MAYBE EVENT TARGET?
-        var current = settings.round;
-        if (!settings.donePlaying) {
-          play(current);
-        }
-      });
-    // ------------ END NAME HANDLER BELOW --
-    });
+    meetPlayer(controls.met);
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
   // --------------------
-  function validate(playForm) {
-    playForm.forEach(function(input) {
-      if (!input.val()) {
-        return false;
-      } else {
-        return true;
-      }
-    })
-  };
+  // function validate(playForm) {
+  //   playForm.forEach(function(input) {
+  //     if (!input.val()) {
+  //       return false;
+  //     } else {
+  //       return true;
+  //     }
+  //   })
+  // };
 
   // PLAY ----
-  function play(round) {
-    // console.log('play() ran');
-    var price = parseFloat(round.price);
-    console.log(price);
-    var currentIntervals = getIntervals(controls.players, price);
-    var runtInterval = getRunt(currentIntervals);
-    var winningPlayer = currentIntervals.indexOf(runtInterval) + 1;
+  function play() {
+    console.log('play() ran');
+    var price = parseFloat(controls.round.price);
+    var runtInterval = getRunt(controls.intervals);
+    var winningPlayer = controls.intervals.indexOf(runtInterval);
+    var victor = controls.playerOrder[winningPlayer];
 
-    updateScore(winningPlayer);
+    console.log(`WINNER = ${victor}`);
+    updateScore(victor);
     checkDefault(controls.turns, controls.scoreboard);
-
+    console.log(controls.scoreboard);
     if (controls.gameOver) {
       judge(controls.scoreboard);
     } else {
@@ -104,49 +94,61 @@ $(function() {
 
   // DISPLAY --
   function reload() {
-    // console.log('reload() ran');
+    console.log('reload() ran');
+    clearChamber();
     controls.round = controls.clip.shift();
-    console.log(controls.round.image);
-
+    // console.log(controls.round.url);
+    console.log(`PRICE = ${controls.round.price}`);
+    roundRefresh();
     populate(
       controls.round.image,
       controls.round.title,
       controls.round.description
     );
 
+    if (controls.shotClock === 0) {
+      controls.shotClock = controls.players;
+      giveTurn(shuffle(controls.names));
+    }
+
     if (controls.clip.length === 0) {
       controls.gameOver = true;
     }
-    // console.log(controls.round.url);
-    console.log(`PRICE = ${controls.round.price}`);
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // JUDGE ---
-  function judge(status) {
-    // console.log('judge() ran');
-    var factors = {
-      control: 0,
-      victor: null,
-      scores: status,
-      currentScore: null
-    };
+  // JUDGE ----------
+  function judge(scoreboard) {
+    console.log('judge() ran');
+    // var factors = {
+    //   control: 0,
+    //   champion: null,
+    //   scores: scoreboard,
+    //   currentScore: null
+    // };
 
-    for (let i = 1; i <= controls.players; i++) {
-      factors.currentScore = factors.scores[`player${i}`];
-      if (factors.currentScore > factors.control) {
-        factors.victor = $(`#label${i}`).text();
-        factors.control = factors.currentScore;
+    var highScore = 0;
+    var champion;
+
+    for (let key in scoreboard) {
+      if (scoreboard[key] > highScore) {
+        champion = key;
+        highScore = scoreboard[key];
       }
     }
-    if (checkTie(controls.players, factors.control)) {
+
+    if (checkTie(scoreboard, highScore)) {
       controls.gameOver = true;
       controls.donePlaying = true;
+      clearChamber();
       return;
     };
-    $('#nameDisplay').text(`WINNER = ${factors.victor}`);
+
+    console.log('WINNER = ' + champion);
+    $('#nameDisplay').text(`WINNER = ${champion}`);
     controls.donePlaying = true;
+    clearChamber();
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -154,7 +156,7 @@ $(function() {
 
   // LOADS GAME ----------------------
   function loadGame(rules) {
-    // console.log('loadGame() ran');
+    console.log('loadGame() ran');
     controls.loading = true;
     var listingRequest = `https://openapi.etsy.com/v2/listings/active.js?tags=${rules.tag}&limit=99&api_key=${etsyKey}`;
 
@@ -173,19 +175,20 @@ $(function() {
       });
 
       // INIT ALL --------------------
-      initialize(loadClip(rules.turns), rules);
+      initialize(loadClip(rules.turns));
     });
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
   // INITIALIZE ALL ------------------
-  function initialize(fullClip, settings) {
-    // console.log('initialize() ran');
+  function initialize(fullClip) {
+    console.log('initialize() ran');
     var loopDuration = fullClip.length;
     // PLEDGE TO GET IMAGES -------
     var pledgeToGet = new Promise(function(resolve, reject) {
       var index = 0;
+
       getImages();
       function getImages() {
         // console.log('getImages() ran');
@@ -205,10 +208,17 @@ $(function() {
       };
     });
 
+
     // CHECK PROMISE ------
     pledgeToGet.then(function() {
+      console.log('initialized');
       controls.loading = false;
-      initGame(settings);
+      controls.round = fullClip.shift();
+      populate(
+        controls.round.image,
+        controls.round.title,
+        controls.round.description
+      );
     });
   };
 
@@ -228,14 +238,17 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   function loadClip(clipSize) {
+    console.log('loadClip() ran');
     var range = controls.listingObjects.length;
+    console.log(range);
     while (controls.gameLoad.length < clipSize) {
       var randomIndex = Math.floor(Math.random() * range);
       var randomListing = controls.listingObjects[randomIndex];
       //------------------------------------------
       if (!controls.gameLoad.includes(randomListing)) {
-        controls.gameLoad.push(controls.listingObjects[randomIndex]);
-        controls.clip.push(controls.listingObjects[randomIndex]);
+        let chosenListing = controls.listingObjects.splice(randomIndex, 1);
+        controls.gameLoad.push(chosenListing[0]);
+        controls.clip.push(chosenListing[0]);
       }
     }
     return controls.clip;
@@ -254,25 +267,17 @@ $(function() {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // GETS GUESS/PRICE DIFFERENCES -----
-  function getIntervals(headCount, price) {
-    var guess;
-    var intervals = [];
+  function getInterval(guess, price) {
     var difference;
-    for (let i = 1; i <= headCount; i++) {
-      // might not need parseFloat here...
-      guess = parseFloat($(`#player${i}`).val());
-      if (guess > price) {
-        difference = guess - price;
-        intervals.push(difference);
-      } else if (guess < price) {
-        difference = price - guess;
-        intervals.push(difference);
-      } else {
-        intervals.push(0);
-      }
+    if (guess > price) {
+      difference = guess - price;
+      controls.intervals.push(difference);
+    } else if (guess < price) {
+      difference = price - guess;
+      controls.intervals.push(difference);
+    } else {
+      controls.intervals.push(0);
     }
-    return intervals;
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -280,7 +285,7 @@ $(function() {
   // LEAST DEGREE OF DIFFERENCE
   function getRunt(intervals) {
     var runt = intervals[0];
-    for (let i = 1; i <= intervals.length; i++) {
+    for (let i = 1; i < intervals.length; i++) {
       if (intervals[i] < runt) {
         runt = intervals[i];
       }
@@ -288,18 +293,30 @@ $(function() {
     return runt;
   };
 
+  function lockIn(finalAnswer) {
+    console.log('lockIn() ran');
+    --controls.shotClock;
+    var price = parseFloat(controls.round.price);
+    getInterval(finalAnswer, price);
+    if (controls.shotClock === 0) {
+      play();
+    } else {
+      $('#playerGuesses').empty();
+      giveTurn(controls.dugout);
+    }
+  };
+
   /////////////////////////////////////////////////////////////////////////////
 
   // ACCOUNT FOR TIE GAME -------------
-  function checkTie(headCount, tieControl) {
+  function checkTie(scores, best) {
     var tieTest;
     var tieGame = false;
     var xWayTie;
 
-    for (let j = 1; j <= headCount; j++) {
-      tieTest = controls.scoreboard[`player${j}`];
-      if (tieTest === tieControl) {
-        controls.ties.push($(`#label${j}`).text());
+    for (let key in scores) {
+      if (scores[key] === best) {
+        controls.ties.push(key);
       }
     }
 
@@ -317,7 +334,7 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   // CLEARS GAME --
-  function clearGame() {
+  function hardReset() {
     controls.ties = [];
     controls.gameOver = false;
     controls.donePlaying = false;
@@ -331,6 +348,12 @@ $(function() {
     controls.clip = [];
   };
 
+  function roundRefresh() {
+    controls.ties = [];
+    controls.intervals = [];
+    controls.playerOrder = [];
+  };
+
   /////////////////////////////////////////////////////////////////////////////
 
   // GETS RULES ---
@@ -338,24 +361,20 @@ $(function() {
     controls.tag = $('#tag').val();
     controls.turns = $('#turns').val();
     controls.players = $('#players').val();
+    controls.needToMeet = parseFloat($('#players').val());
+    controls.shotClock = parseFloat($('#players').val());
     return controls;
   };
 
+  /////////////////////////////////////////////////////////////////////////////
+
   // GETS NAMES --?
-  function grabNames() {
-    console.log('grabNames() ran');
-    for (let k = 1; k <= controls.players; k++) {
-      let name = $(`#player${k}`).val();
-      controls.names.push(name);
-    }
-
-    console.log(controls.names);
-
-    // controls.tag = $('#tag').val();
-    // controls.turns = $('#turns').val();
-    // controls.players = $('#players').val();
+  function grabName() {
+    console.log('grabName() ran');
+    var name = $(`#playerGuesses > input[type=text]`).val();
+    // console.log(name);
     $('#playerGuesses').empty();
-    return controls.names;
+    return name;
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -371,42 +390,112 @@ $(function() {
 
   // DISPLAYS / TRACKS SCORES
   function updateScore(winner) {
-    var newScore;
-    var roundWinner = $(`#label${winner}`).text();
-    console.log(`ROUND WINNER = ${roundWinner}`);
-    controls.scoreboard[`player${winner}`]++;
-    newScore = controls.scoreboard[`player${winner}`];
-    $(`#p${winner}score`).text(roundWinner + ' (SCORE = ' + newScore.toString() + ')');
+    controls.scoreboard[winner]++;
+    $(`#${winner}score`).text(controls.scoreboard[winner]);
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
-  // MEETS PLAYERS -----------
-  function meetPlayers(headCount) {
-    for (let i = 1; i <= headCount; i++) {
-      // $('#playerGuesses').append(`<label id=label${i} for=player${i}></label>`);
-      $('#playerGuesses').append(`<input type=text class=playerInput id=player${i} placeholder=\"Player ${i}\">`);
-    };
+  // MEET PLAYERS -----------
+  function meetPlayer(playerNumber) {
+    console.log('meetPlayer() ran');
+    // $('#playerGuesses').append(`<label id=label${i} for=player${i}></label>`);
+    $('#playerGuesses').append(`<input type=text class=playerInput placeholder=\"Player ${playerNumber} \">`);
     $('#playerGuesses').append('<input type=submit id=nameSubmit>');
+    // --------- NAME HANDLER ------------
+    $('#nameSubmit').on('click', function(ev) {
+      ev.preventDefault();
+      addPlayer(grabName());
+    });
   };
-
-  // ADDS PLAYERS ---------
-  function addPlayers(headCount, playerNames) {
-    console.log(playerNames);
-    for (let i = 1; i <= headCount; i++) {
-      let j = (i - 1);
-      let playerName = playerNames[j];
-      console.log(playerName);
-      $('#playerGuesses').append(`<div class=scorecard id=p${i}score>${playerName} (SCORE = 0)</div>`);
-      $('#playerGuesses').append(`<label id=label${i} for=player${i}>${playerName}</label>`);
-      $('#playerGuesses').append(`<input type=number min=0.01 class=playerInput id=player${i}>`);
-      controls.scoreboard[`player${i}`] = 0;
-    };
-    $('#playerGuesses').append('<input type=submit id=guessSubmit>');
-  };
-
-  //
 
   /////////////////////////////////////////////////////////////////////////////
+
+  function addPlayer(nickname) {
+    console.log('addPlayer() ran');
+    // $('#playerGuesses').append(`<div class=scorecard id=p${i}score>${nickname} (SCORE = 0)</div>`);
+    // $('#playerGuesses').append(`<label for=${nickname}>${nickname}: </label>`);
+    // $('#playerGuesses').append(`<input type=number min=0.01 class=playerInput id=${nickname}>`);
+
+    controls.names.push(nickname);
+    controls.scoreboard[nickname] = 0;
+
+    $('#scoreboard').append(`<div class=scoreCard id=${nickname}><div>${nickname}</div><div id=${nickname}score>0</div></div>`);
+    // console.log(nickname);
+    // console.log(controls.names);
+    // $('#playerGuesses').append('<input type=submit id=guessSubmit>');
+
+    if (controls.met < controls.needToMeet) {
+      ++controls.met;
+      meetPlayer(controls.met);
+    } else {
+      giveTurn(shuffle(controls.names));
+    }
+  };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  function giveTurn(lineUp) {
+    console.log('giveTurn() ran');
+    // console.log(controls);
+    var atBat = lineUp.shift();
+
+    $('#playerGuesses').append(`<label for=${atBat}>${atBat}: </label>`);
+    $('#playerGuesses').append(`<input type=number min=0.01 class=playerInput id=${atBat}>`);
+    $('#playerGuesses').append('<input type=submit id=guessSubmit>');
+    // $('#playerGuesses').append('<input type=button id=replay value=Replay>');
+
+    // $('#replay').on('click', function(ev) {
+    //   softReset(ev);
+    // });
+
+    $('#guessSubmit').on('click', function(ev) {
+      console.log('guess handler triggered');
+      ev.preventDefault();
+      if (!controls.loading) {
+        var playerGuess = $(`#playerGuesses > input[type=number]`).val();
+        var guessValue = parseFloat(playerGuess);
+        lockIn(guessValue);
+      }
+    });
+  };
+
+  // function softReset() {
+  //   for (let key in controls.scoreboard) {
+  //     controls.scoreboard[key] = 0;
+  //     $(`#${key}score`).text('0');
+  //   }
+  //   console.log(controls.listingObjects.length);
+  //   controls.clip = [];
+  //   controls.dugout = [];
+  //   controls.gameLoad = [];
+  //   roundRefresh();
+  //   initialize(loadClip(controls.turns));
+  //   clearChamber();
+  //   giveTurn(shuffle(controls.names));
+  // };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  function shuffle(ordered) {
+    console.log('shuffle() ran');
+    var range = ordered.length;
+    while (controls.dugout.length < ordered.length) {
+      var randomInteger = Math.floor(Math.random() * range);
+      var randomMember = ordered[randomInteger];
+      if (!controls.dugout.includes(randomMember)) {
+        controls.dugout.push(randomMember);
+        controls.playerOrder.push(randomMember);
+      }
+    }
+    return controls.dugout;
+  };
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  function clearChamber() {
+    $('#playerGuesses').empty();
+  };
 });
+
 ////////////////////////////////////////////////////////////////////////////////
