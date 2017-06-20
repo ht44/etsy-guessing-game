@@ -155,6 +155,7 @@ $(function() {
       function getImage() {
         // console.log('getImage() ran');
         setTimeout(function() {
+          console.log('got 1 image for 1 listing');
           var imageRequest = `https://openapi.etsy.com/v2/listings/${fullClip[index].id}/images.js?api_key=${etsyKey}`;
           makeRequest(imageRequest).done(function(imageData) {
             var imageUrl = imageData.results[0].url_570xN;
@@ -166,7 +167,7 @@ $(function() {
               resolve('SUCCESS');
             }
           });
-        }, 150);
+        }, 144);
       };
     });
 
