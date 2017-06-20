@@ -149,7 +149,7 @@ $(function() {
       getImage();
       function getImage() {
         setTimeout(function() {
-          var imageRequest = `https://openapi.etsy.com/v2/listings/${fullClip[index].id}/images.js?api_key=${etsyKey}`;
+          var imageRequest = `https://openapi.etsy.com/v2/listings/${fullClip[index].id}/images.js?api_key=dp7irwv1ffg7qvrdk2ymlc18`;
           makeRequest(imageRequest).done(function(imageData) {
             var imageUrl = imageData.results[0].url_570xN;
             controls.clip[index].image = imageUrl;
