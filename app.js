@@ -119,7 +119,7 @@ $(function() {
   // LOADS GAME ----------------------
   function loadGame(rules) {
     controls.loading = true;
-    var listingRequest = `https://openapi.etsy.com/v2/listings/active.js?tags=${rules.tag}&limit=99&api_key=${etsyKey}`;
+    var listingRequest = `https://openapi.etsy.com/v2/listings/active.js?tags=${rules.tag}&limit=99&api_key=dp7irwv1ffg7qvrdk2ymlc18`;
 
     makeRequest(listingRequest).done(function(data) {
       var results = data.results;
