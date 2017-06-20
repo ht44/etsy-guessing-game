@@ -48,7 +48,6 @@ $(function() {
 
   // SUBMITS --
   function play() {
-    // console.log('play() ran');
     var price = parseFloat(controls.round.price);
     var runtInterval = getRunt(controls.intervals);
     var winningPlayer = controls.intervals.indexOf(runtInterval);
@@ -70,7 +69,6 @@ $(function() {
 
   // DISPLAYS --
   function reload() {
-    // console.log('reload() ran');
     clearChamber();
     controls.round = controls.clip.shift();
     roundRefresh();
@@ -94,7 +92,6 @@ $(function() {
 
   // JUDGE ----------
   function judge(scoreboard) {
-    // console.log('judge() ran');
     var highScore = 0;
     var champion;
 
@@ -121,7 +118,6 @@ $(function() {
 
   // LOADS GAME ----------------------
   function loadGame(rules) {
-    // console.log('loadGame() ran');
     controls.loading = true;
     var listingRequest = `https://openapi.etsy.com/v2/listings/active.js?tags=${rules.tag}&limit=99&api_key=${etsyKey}`;
 
@@ -146,16 +142,13 @@ $(function() {
 
   // PREPARE ONE GAME ---------
   function initialize(fullClip) {
-    // console.log('initialize() ran');
     var loopDuration = fullClip.length;
     // PROMISE TO GET IMAGES -------
     var getImages = new Promise(function(resolve, reject) {
       var index = 0;
       getImage();
       function getImage() {
-        // console.log('getImage() ran');
         setTimeout(function() {
-          console.log('got 1 image for 1 listing');
           var imageRequest = `https://openapi.etsy.com/v2/listings/${fullClip[index].id}/images.js?api_key=${etsyKey}`;
           makeRequest(imageRequest).done(function(imageData) {
             var imageUrl = imageData.results[0].url_570xN;
@@ -173,7 +166,6 @@ $(function() {
 
     // KEEPS PROMISE ------
     getImages.then(function() {
-      // console.log('game loaded');
       controls.loading = false;
       controls.round = fullClip.shift();
       populate (
@@ -198,7 +190,6 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   function loadClip(clipSize) {
-    // console.log('loadClip() ran');
     var range = controls.listingObjects.length;
     while (controls.gameLoad.length < clipSize) {
       var randomIndex = Math.floor(Math.random() * range);
@@ -256,7 +247,6 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   function lockIn(finalAnswer) {
-    // console.log('lockIn() ran');
     --controls.shotClock;
     controls.taken.push(finalAnswer);
     var price = parseFloat(controls.round.price);
@@ -347,7 +337,6 @@ $(function() {
 
   // TAKES NAME --
   function grabName() {
-    // console.log('grabName() ran');
     var name = $(`#playerGuesses > input[type=text]`).val();
     $('#playerGuesses').empty();
     return name;
@@ -361,7 +350,6 @@ $(function() {
     $('#listingImage').append(`<img src=${image}>`);
     $('#listingTitle').append(`<h2>${title}</h2>`);
     $('#listingDescrip').append(`<p>${description}</p>`);
-    console.log(controls.round.url);
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -376,7 +364,6 @@ $(function() {
 
   // ENTER PLAYER --------------
   function meetPlayer(playerNumber) {
-    // console.log('meetPlayer() ran');
     var nameField = $(`<input type=text class=playerInput placeholder=\"Player ${playerNumber} \">`);
     $('#playerGuesses').append(nameField);
     nameField.focus();
@@ -392,7 +379,6 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   function addPlayer(nickname) {
-    // console.log('addPlayer() ran');
     controls.names.push(nickname);
     controls.scoreboard[nickname] = 0;
     $('#scoreboard').append(`<div class=scoreCard id=${nickname}><div>${nickname}</div><div id=${nickname}score>0</div></div>`);
@@ -407,7 +393,6 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   function giveTurn(lineup) {
-    // console.log('giveTurn() ran');
     var atBat = lineup.shift();
     var guessField = $(`<input type=number min=0.01 class=playerInput id=${atBat} placeHolder=${[atBat]}>`);
     $('#playerGuesses').append(guessField);
@@ -433,7 +418,6 @@ $(function() {
   /////////////////////////////////////////////////////////////////////////////
 
   function shuffle(ordered) {
-    // console.log('shuffle() ran');
     var range = ordered.length;
     while (controls.dugout.length < ordered.length) {
       var randomInteger = Math.floor(Math.random() * range);
