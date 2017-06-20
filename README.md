@@ -10,4 +10,4 @@ At the start of a new game, you specify how many players will be playing, and fo
 
 Whoever takes the most rounds takes the game! Have fun!
 
-![Demonstration](./images/betsy.gif?raw=true)
+![Demonstration](./images/demo.gif?raw=true)
